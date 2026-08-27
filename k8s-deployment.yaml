@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: books-api-deployment
+  labels:
+    app: books-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: books-api
+  template:
+    metadata:
+      labels:
+        app: books-api
+    spec:
+      containers:
+      - name: books-api-container
+        image: your-registry/books-api:v2.0
+        ports:
+        - containerPort: 8000
+        env:
+        - name: SUPABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: supabase-credentials
+              key: SUPABASE_URL
+        - name: SUPABASE_KEY
+          valueFrom:
+            secretKeyRef:
+              name: supabase-credentials
+              key: SUPABASE_KEY
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: books-api-service
+spec:
+  selector:
+    app: books-api
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8000

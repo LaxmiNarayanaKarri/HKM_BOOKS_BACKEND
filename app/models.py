@@ -403,3 +403,4 @@ class SaleRow(BaseModel):
     event_name: Optional[str] = None
  
     model_config = {"populate_by_name": True}
+    

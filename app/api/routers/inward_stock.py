@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, Request
 
 from app.api.deps import get_books_controller, get_purchases_controller
 from app.controllers.purchases_controller import PurchasesController
-from app.core.auth import CurrentUser, get_current_user
+from app.core.auth import CurrentUser, require_permission
 from app.core.xlsx_export import send_xlsx
 from app.models import PurchaseBatchCreate
 
@@ -12,7 +12,7 @@ router = APIRouter(prefix="/api/inward-stock", tags=["inward-stock"])
 @router.get("", summary="Inward-stock form data + recent purchases")
 def get_inward_stock_page(
     request: Request,
-    user: CurrentUser = Depends(get_current_user),
+    user: CurrentUser = Depends(require_permission("inward_stock_write")),
     controller: PurchasesController = Depends(get_purchases_controller),
 ):
     return controller.inward_stock_page_data(request.query_params)
@@ -21,7 +21,7 @@ def get_inward_stock_page(
 @router.post("", summary="Record a batch of received stock", status_code=201)
 def create_inward_stock(
     payload: PurchaseBatchCreate,
-    user: CurrentUser = Depends(get_current_user),
+    user: CurrentUser = Depends(require_permission("inward_stock_write")),
     controller: PurchasesController = Depends(get_purchases_controller),
 ):
     print(f"Received payload: {payload}", user)
@@ -40,7 +40,7 @@ def create_inward_stock(
 @router.get("/export", summary="Recent Purchases table as .xlsx")
 def export_inward_stock(
     request: Request,
-    user: CurrentUser = Depends(get_current_user),
+    user: CurrentUser = Depends(require_permission("inward_stock_write")),
     controller: PurchasesController = Depends(get_purchases_controller),
 ):
     rows = controller.export_inward_stock_rows(request.query_params)

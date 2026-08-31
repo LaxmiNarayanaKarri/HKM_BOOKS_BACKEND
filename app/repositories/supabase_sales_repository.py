@@ -88,7 +88,7 @@ class SupabaseSalesRepository(ISalesRepository):
         ov_location: str,
         ov_event: str,
     ) -> dict:
-        query = self._table.select("location_id, event_id, qty, sell_price")
+        query = self._table.select("location_id, event_id, qty, sell_price, seller_username")
 
         if ov_date_from and ov_date:
             query = query.gte("sales_date", ov_date_from).lte("sales_date", ov_date)
@@ -103,36 +103,49 @@ class SupabaseSalesRepository(ISalesRepository):
         elif ov_location and ov_location != "all":
             # A location name was given but didn't resolve to any row --
             # return an empty result rather than silently ignoring the filter.
-            return {"sales_by_location": {}, "total_sales": 0}
+            return {"sales_by_location": {}, "sales_by_location_volunteer": {}, "total_sales": 0}
 
         event_id = self._resolve_event_id(ov_event)
         if event_id is not None:
             query = query.eq("event_id", event_id)
         elif ov_event and ov_event != "all":
-            return {"sales_by_location": {}, "total_sales": 0}
+            return {"sales_by_location": {}, "sales_by_location_volunteer": {}, "total_sales": 0}
 
         res = query.execute()
         rows = res.data or []
 
-        # Sum row totals (qty * sell_price) grouped by location_id, then
-        # resolve ids -> names once at the end (fewer repo round-trips
-        # than resolving per-row).
+        # Sum row totals (qty * sell_price) grouped by location_id, and
+        # separately by (location_id, seller_username) for the per-volunteer
+        # breakdown -- resolve location ids -> names once at the end (fewer
+        # repo round-trips than resolving per-row).
         totals_by_location_id: dict[Optional[int], float] = {}
+        totals_by_location_volunteer: dict[Optional[int], dict[str, float]] = {}
         total_sales = 0.0
+
         for row in rows:
             loc_id = row.get("location_id")
             qty = row.get("qty") or 0
             sell_price = row.get("sell_price") or 0
             row_total = qty * sell_price
+            volunteer = (row.get("seller_username") or "").strip() or "(Unknown)"
+
             totals_by_location_id[loc_id] = totals_by_location_id.get(loc_id, 0) + row_total
             total_sales += row_total
 
+            by_volunteer = totals_by_location_volunteer.setdefault(loc_id, {})
+            by_volunteer[volunteer] = by_volunteer.get(volunteer, 0) + row_total
+
         sales_by_location: dict[str, float] = {}
+        sales_by_location_volunteer: dict[str, dict[str, float]] = {}
         for loc_id, amount in totals_by_location_id.items():
             name = self._location_name_by_id(loc_id) or "(Unknown Location)"
             sales_by_location[name] = sales_by_location.get(name, 0) + amount
+            merged = sales_by_location_volunteer.setdefault(name, {})
+            for volunteer, vol_amount in totals_by_location_volunteer.get(loc_id, {}).items():
+                merged[volunteer] = merged.get(volunteer, 0) + vol_amount
 
         return {
             "sales_by_location": sales_by_location,
+            "sales_by_location_volunteer": sales_by_location_volunteer,
             "total_sales": total_sales,
         }

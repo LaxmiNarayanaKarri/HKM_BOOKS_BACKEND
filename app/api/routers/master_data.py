@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends
 
 from app.api.deps import get_books_controller, get_master_data_controller
 from app.controllers.master_data import MasterDataController
-from app.core.auth import CurrentUser, get_current_user
+from app.core.auth import CurrentUser, require_permission
 from app.models import BookCreate, NameCreate, ThresholdUpdate
 from app.controllers.books_controller import BooksController
 
@@ -11,7 +11,7 @@ router = APIRouter(prefix="/api/master-data", tags=["master-data"])
 
 @router.get("", summary="Catalog / categories / languages / locations / events")
 def get_master_data(
-    user: CurrentUser = Depends(get_current_user),
+    user: CurrentUser = Depends(require_permission("master_data_write")),
     controller: MasterDataController = Depends( get_master_data_controller),
 ):
     return controller.get_master_data()
@@ -20,7 +20,7 @@ def get_master_data(
 @router.post("/books", summary="Add a book to the catalog", status_code=201)
 def add_book(
     payload: BookCreate,
-    user: CurrentUser = Depends(get_current_user),
+    user: CurrentUser = Depends(require_permission("master_data_write")),
     controller: MasterDataController = Depends(get_master_data_controller),
 ):
     book, created = controller.add_book(
@@ -39,7 +39,7 @@ def add_book(
 @router.post("/books/threshold", summary="Update a book's low-stock threshold")
 def update_threshold(
     payload: ThresholdUpdate,
-    user: CurrentUser = Depends(get_current_user),
+    user: CurrentUser = Depends(require_permission("master_data_write")),
     controller: MasterDataController = Depends(get_master_data_controller),
 ):
     book = controller.update_book_threshold(
@@ -52,7 +52,7 @@ def update_threshold(
 @router.post("/categories", summary="Add a category", status_code=201)
 def add_category(
     payload: NameCreate,
-    user: CurrentUser = Depends(get_current_user),
+    user: CurrentUser = Depends(require_permission("master_data_write")),
     controller: MasterDataController = Depends(get_master_data_controller),
 ):
     name = controller.add_category(payload.name)
@@ -62,7 +62,7 @@ def add_category(
 @router.post("/languages", summary="Add a language", status_code=201)
 def add_language(
     payload: NameCreate,
-    user: CurrentUser = Depends(get_current_user),
+    user: CurrentUser = Depends(require_permission("master_data_write")),
     controller: MasterDataController = Depends(get_master_data_controller),
 ):
     name = controller.add_language(payload.name)
@@ -72,7 +72,7 @@ def add_language(
 @router.post("/locations", summary="Add a location", status_code=201)
 def add_location(
     payload: NameCreate,
-    user: CurrentUser = Depends(get_current_user),
+    user: CurrentUser = Depends(require_permission("master_data_write")),
     controller: MasterDataController = Depends(get_master_data_controller),
 ):
     name = controller.add_location(payload.name)
@@ -80,7 +80,7 @@ def add_location(
 
 @router.get("/locations", summary="List all locations")
 def list_locations(
-    user: CurrentUser = Depends(get_current_user),
+    user: CurrentUser = Depends(require_permission("master_data_write")),
     controller: MasterDataController = Depends(get_master_data_controller),
 ):
     locations = controller.list_locations()
@@ -89,7 +89,7 @@ def list_locations(
 @router.post("/sources", summary="Add a source", status_code=201)
 def add_source(
     payload: NameCreate,
-    user: CurrentUser = Depends(get_current_user),
+    user: CurrentUser = Depends(require_permission("master_data_write")),
     controller: MasterDataController = Depends(get_master_data_controller),
 ):
     name = controller.add_source(payload.name)
@@ -97,7 +97,7 @@ def add_source(
 
 @router.get("/sources", summary="List all sources")
 def list_sources(
-    user: CurrentUser = Depends(get_current_user),
+    user: CurrentUser = Depends(require_permission("master_data_write")),
     controller: MasterDataController = Depends(get_master_data_controller),
 ):
     sources = controller.list_sources()
@@ -107,7 +107,7 @@ def list_sources(
 @router.post("/events", summary="Add an event", status_code=201)
 def add_event(
     payload: NameCreate,
-    user: CurrentUser = Depends(get_current_user),
+    user: CurrentUser = Depends(require_permission("master_data_write")),
     controller: MasterDataController = Depends(get_master_data_controller),
 ):
     name = controller.add_event(payload.name)

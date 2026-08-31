@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, Query
 
 from app.api.deps import get_sales_controller
 from app.controllers.sales_controller import SalesController
-from app.core.auth import CurrentUser, get_current_user
+from app.core.auth import CurrentUser, require_permission
 from app.core.xlsx_export import send_xlsx
 from app.models import SaleCreate
 
@@ -16,7 +16,7 @@ def get_sell_entry_page(
     se_date_from: str = Query(default=""),
     se_date_to: str = Query(default=""),
     se_location: str = Query(default="all"),
-    user: CurrentUser = Depends(get_current_user),
+    user: CurrentUser = Depends(require_permission("sell_entry_write")),
     controller: SalesController = Depends(get_sales_controller),
 ):
     return controller.sell_entry_page_data(
@@ -27,7 +27,7 @@ def get_sell_entry_page(
 @router.post("", summary="Record a sale", status_code=201)
 def create_sell_entry(
     payload: SaleCreate,
-    user: CurrentUser = Depends(get_current_user),
+    user: CurrentUser = Depends(require_permission("sell_entry_write")),
     controller: SalesController = Depends(get_sales_controller),
 ):
     row = controller.record_sell_entry(user.username, payload)
@@ -40,7 +40,7 @@ def export_sell_entries(
     se_event: str = Query(default="all"),
     se_date_from: str = Query(default=""),
     se_date_to: str = Query(default=""),
-    user: CurrentUser = Depends(get_current_user),
+    user: CurrentUser = Depends(require_permission("sell_entry_write")),
     controller: SalesController = Depends(get_sales_controller),
 ):
     rows = controller.export_sell_entries_rows(

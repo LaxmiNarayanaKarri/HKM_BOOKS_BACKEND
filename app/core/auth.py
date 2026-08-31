@@ -50,6 +50,41 @@ class CurrentUser:
         return self.role == "service"
 
 
+ROUTE_PERMISSIONS = {
+    "dashboard_view":        ["admin"],
+    "user_management":       ["admin"],
+    "sell_entry_write":      ["admin", "commander", "volunteer"],
+    "inward_stock_write":    ["admin"],
+    "volunteer_assignment":  ["admin", "commander"],
+    "backup":                ["admin"],
+    "catalog_view":          ["admin", "commander", "volunteer"],
+    "location_overview":       ["admin", "commander", "volunteer"],
+    "master_data_write":        ["admin", "commander", "volunteer"],
+    # add new actions here as you find more routes that need gating --
+    # fill in your real role names once you send them over
+}
+
+def roles_for(action: str) -> list[str]:
+    try:
+        return ROUTE_PERMISSIONS[action]
+    except KeyError:
+        raise KeyError(
+            f"No permission entry for action '{action}' — add it to "
+            f"ROUTE_PERMISSIONS in permissions.py before gating a route with it."
+        )
+        
+
+def require_permission(action: str):
+    allowed_roles = roles_for(action)  # resolved once when the route module loads
+
+    def _check(user: CurrentUser = Depends(get_current_user)) -> CurrentUser:
+        if user.role not in allowed_roles:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"This action requires one of these roles: {', '.join(allowed_roles)}.",
+            )
+        return user
+    return _check
 # ---------------------------------------------------------------------------
 # Internal helpers
 # ---------------------------------------------------------------------------

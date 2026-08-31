@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, Request
 
 from app.api.deps import get_books_controller
 from app.controllers.books_controller import BooksController
-from app.core.auth import CurrentUser, get_current_user, require_admin
+from app.core.auth import CurrentUser, require_permission
 from app.core.xlsx_export import send_xlsx
 
 router = APIRouter(prefix="/api/dashboard", tags=["dashboard"])
@@ -11,7 +11,7 @@ router = APIRouter(prefix="/api/dashboard", tags=["dashboard"])
 @router.get("", summary="Personal (or org-wide) overview + inventory")
 def get_dashboard(
     request: Request,
-    user: CurrentUser = Depends(get_current_user),
+    user: CurrentUser = Depends(require_permission("dashboard_view")),
     controller: BooksController = Depends(get_books_controller),
 ):
     return controller.dashboard_data(user.username, user.is_admin, request.query_params)
@@ -20,7 +20,7 @@ def get_dashboard(
 @router.get("/export/leaderboard", summary="Top Distributors table as .xlsx (admin only)")
 def export_leaderboard(
     request: Request,
-    user: CurrentUser = Depends(require_admin),
+    user: CurrentUser = Depends(require_permission("dashboard_view")),
     controller: BooksController = Depends(get_books_controller),
 ):
     rows, f = controller.leaderboard_export_rows(user.username, request.query_params)
@@ -35,7 +35,7 @@ def export_leaderboard(
 @router.get("/export/top-books", summary="Top Books table as .xlsx")
 def export_top_books(
     request: Request,
-    user: CurrentUser = Depends(get_current_user),
+    user: CurrentUser = Depends(require_permission("dashboard_view")),
     controller: BooksController = Depends(get_books_controller),
 ):
     rows, f = controller.top_books_export_rows(user.username, user.is_admin, request.query_params)
@@ -48,7 +48,7 @@ def export_top_books(
 @router.get("/export/inventory", summary="Book Inventory table as .xlsx")
 def export_inventory(
     request: Request,
-    user: CurrentUser = Depends(get_current_user),
+    user: CurrentUser = Depends(require_permission("dashboard_view")),
     controller: BooksController = Depends(get_books_controller),
 ):
     rows, f = controller.inventory_export_rows(user.username, user.is_admin, request.query_params)

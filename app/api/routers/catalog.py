@@ -1,17 +1,18 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 
 from app.controllers.books_controller import BooksController
+from app.core.auth import CurrentUser, require_permission
 
 router = APIRouter(tags=["catalog"])
 
 
 @router.get("/books", summary="Get all books")
-def get_books():
+def get_books(user: CurrentUser = Depends(require_permission("catalog_view"))):
     return BooksController().list_books()
 
 
 @router.get("/books/{book_id}", summary="Get book by ID")
-def get_book_by_id(book_id: int):
+def get_book_by_id(book_id: int, user: CurrentUser = Depends(require_permission("catalog_view"))):
     book = BooksController().get_book(book_id)
     if not book:
         raise HTTPException(status_code=404, detail="Book not found")

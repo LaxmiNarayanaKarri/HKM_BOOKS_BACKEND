@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends
 
 from app.api.deps import get_books_controller
 from app.controllers.books_controller import BooksController
-from app.core.auth import CurrentUser, get_current_user
+from app.core.auth import CurrentUser, require_permission
 from app.core.xlsx_export import send_xlsx_multi
 
 router = APIRouter(prefix="/api/backup", tags=["backup"])
@@ -13,7 +13,7 @@ PURCHASES_BACKUP_COLUMNS = ["date", "title", "short_title", "category", "languag
 
 @router.get("", summary="Last-7-days backup availability, one entry per day")
 def get_backup_days(
-    user: CurrentUser = Depends(get_current_user),
+    user: CurrentUser = Depends(require_permission("backup")),
     controller: BooksController = Depends(get_books_controller),
 ):
     return controller.backup_page_data()
@@ -22,7 +22,7 @@ def get_backup_days(
 @router.get("/download/{day}", summary="Download that single day's backup as .xlsx")
 def download_backup(
     day: str,
-    user: CurrentUser = Depends(get_current_user),
+    user: CurrentUser = Depends(require_permission("backup")),
     controller: BooksController = Depends(get_books_controller),
 ):
     # ValidationError (out-of-range day) propagates to the app-wide

@@ -71,6 +71,7 @@ class SalesController:
             "ov_location": ov_location,
             "ov_event": ov_event,
             "sales_by_location": result.get("sales_by_location", {}),
+            "sales_by_location_volunteer": result.get("sales_by_location_volunteer", {}),
             "total_sales": result.get("total_sales", 0),
         }
 

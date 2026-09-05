@@ -6,7 +6,7 @@ load_dotenv()
 from fastapi import FastAPI
 from app import container  # noqa: F401
 from app.core.errors import register_error_handlers
-from app.api.routers import backup, catalog, dashboard, internal, inward_stock, master_data, sell
+from app.api.routers import backup, catalog, dashboard, internal, inward_stock, master_data, sell, nidhi, book_requests
 from fastapi.middleware.cors import CORSMiddleware
 import os
 
@@ -27,6 +27,8 @@ def create_app() -> FastAPI:
     app.include_router(inward_stock.router)
     app.include_router(master_data.router)
     app.include_router(internal.router)
+    app.include_router(nidhi.router)
+    app.include_router(book_requests.router)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=[os.environ.get("FRONTEND_URL", "http://localhost:5000")],

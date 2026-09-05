@@ -6,8 +6,12 @@ mirroring `app/domain/locations_domain.py`.
 from typing import List, Optional
 
 from app.contracts.event_repository import IEventRepository
+from app.core.ttl_cache import TTLCache
 from app.injector import injector
 from app.models import Event
+
+
+reference_cache = TTLCache(ttl_seconds=120)
 
 
 @injector
@@ -27,10 +31,12 @@ class EventsDomain:
     # ------------------------------------------------------------------
 
     def list_events(self) -> List[Event]:
-        return self.repo.list_all()
+        return reference_cache.get_or_set("events", self.repo.list_all)
 
     def get_event(self, event_id: int) -> Optional[Event]:
-        return self.repo.get(event_id)
+        return reference_cache.get_or_set(
+            f"event:{event_id}", lambda: self.repo.get(event_id)
+        )
 
     def find_by_name(self, name: str) -> Optional[Event]:
         return self.repo.find_by_name(name)

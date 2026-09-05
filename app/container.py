@@ -11,6 +11,7 @@ from app.injector import container  # re-exported for convenience
 # Infrastructure
 import app.integrations.supabase_client   # noqa: F401  → DBContract
 import app.storage.supabase_storage       # noqa: F401  → FileStorageContract
+import app.blob_storage                   # noqa: F401  → IBlobStore
 
 # Repositories  (one import per contract — order doesn't matter)
 import app.repositories.supabase_book_repository        # noqa: F401  → IBookRepository
@@ -24,5 +25,7 @@ import app.repositories.supabase_sales_repository       # noqa: F401  → ISales
 import app.repositories.supabase_sell_entry_repository  # noqa: F401  → ISellEntryRepository
 import app.repositories.supabase_stock_repository      # noqa: F401  → IStockRepository
 import app.repositories.supabase_inventory_repository  # noqa: F401  → IInventoryRepository
+import app.repositories.supabase_nidhi_repository      # noqa: F401  → INidhiRepository
+import app.repositories.supabase_book_request_repository  # noqa: F401
 
 __all__ = ["container"]

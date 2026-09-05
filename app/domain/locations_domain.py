@@ -6,8 +6,12 @@ Injected data-access boundary + all Locations business logic, mirroring
 from typing import List, Optional
 
 from app.contracts.location_repository import ILocationRepository
+from app.core.ttl_cache import TTLCache
 from app.injector import injector
 from app.models import Location
+
+
+reference_cache = TTLCache(ttl_seconds=120)
 
 
 @injector
@@ -25,10 +29,12 @@ class LocationsDomain:
         self.repo = repo
 
     def list_locations(self) -> List[Location]:
-        return self.repo.list_all()
+        return reference_cache.get_or_set("locations", self.repo.list_all)
 
     def get_location(self, location_id: int) -> Optional[Location]:
-        return self.repo.get(location_id)
+        return reference_cache.get_or_set(
+            f"location:{location_id}", lambda: self.repo.get(location_id)
+        )
 
     def find_by_name(self, name: str) -> Optional[Location]:
         return self.repo.find_by_name(name)

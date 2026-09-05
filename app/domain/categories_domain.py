@@ -6,8 +6,12 @@ mirroring `app/domain/locations_domain.py`.
 from typing import List, Optional
 
 from app.contracts.category_repository import ICategoryRepository
+from app.core.ttl_cache import TTLCache
 from app.injector import injector
 from app.models import Category
+
+
+reference_cache = TTLCache(ttl_seconds=120)
 
 
 @injector
@@ -27,10 +31,12 @@ class CategoriesDomain:
     # ------------------------------------------------------------------
 
     def list_categories(self) -> List[Category]:
-        return self.repo.list_all()
+        return reference_cache.get_or_set("categories", self.repo.list_all)
 
     def get_category(self, category_id: int) -> Optional[Category]:
-        return self.repo.get(category_id)
+        return reference_cache.get_or_set(
+            f"category:{category_id}", lambda: self.repo.get(category_id)
+        )
 
     def find_by_name(self, name: str) -> Optional[Category]:
         return self.repo.find_by_name(name)

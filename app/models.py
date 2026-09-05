@@ -21,8 +21,9 @@ import re
 from typing import List, Optional
 
 from pydantic import BaseModel, Field, field_validator
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from pydantic.dataclasses import dataclass
+from enum import Enum
 
 
 # ---------------------------------------------------------------------------
@@ -404,3 +405,88 @@ class SaleRow(BaseModel):
  
     model_config = {"populate_by_name": True}
     
+    
+class NidhiFundType(str, Enum):
+    TIRTHA_NIDHI = "tirtha_nidhi"
+    CONTRIBUTION_NIDHI = "contribution_nidhi"
+ 
+ 
+class NidhiTransactionType(str, Enum):
+    CONTRIBUTION = "contribution"
+    REDEMPTION = "redemption"
+ 
+ 
+class NidhiTransactionStatus(str, Enum):
+    PENDING = "pending"
+    APPROVED = "approved"
+    REJECTED = "rejected"
+    COMPLETED = "completed"
+
+
+@dataclass
+class BookRequest:
+    book_id: int
+    quantity: int
+    location_id: int
+    event_id: int
+    priority: str
+    requested_by: str
+    status: str = "pending"
+    id: Optional[str] = None
+    created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+ 
+ 
+@dataclass
+class NidhiBalance:
+    user_id: str
+    tirtha_balance: float
+    contribution_balance: float
+    updated_at: Optional[datetime] = None
+
+    def for_fund(self, fund_type: NidhiFundType) -> float:
+        return (
+            self.tirtha_balance
+            if fund_type == NidhiFundType.TIRTHA_NIDHI
+            else self.contribution_balance
+        )
+
+
+@dataclass
+class NidhiTransaction:
+    user_id: str
+    fund_type: NidhiFundType
+    type: NidhiTransactionType
+    amount: float
+    requested_by: str
+    status: NidhiTransactionStatus
+    created_at: datetime
+    id: Optional[str] = None
+    balance_after: Optional[float] = None
+    tirtha_amount: float = 0.0
+    contribution_amount: float = 0.0
+    note: Optional[str] = None
+    decided_by: Optional[str] = None
+    decided_at: Optional[datetime] = None
+    decision_note: Optional[str] = None
+    archived: bool = False
+    
+class RedemptionDecisionRequest(BaseModel):
+    amount: Optional[float] = None
+    fund_type: Optional[NidhiFundType] = None
+    tirtha_amount: Optional[float] = None
+    contribution_amount: Optional[float] = None
+    user_id: Optional[str] = None          # admin correcting who it's for
+    reason: Optional[str] = None           # used on reject only
+
+
+class ContributeRequest(BaseModel):
+    user_id: str
+    fund_type: NidhiFundType
+    amount: float
+    note: Optional[str] = None
+
+class RedeemRequest(BaseModel):
+    user_id: str
+    fund_type: NidhiFundType
+    amount: float
+    note: Optional[str] = None   # Flask should send `note`, not `reason` (below)

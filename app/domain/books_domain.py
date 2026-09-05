@@ -6,8 +6,12 @@ mirroring `app/domain/locations_domain.py`.
 from typing import List, Optional
 
 from app.contracts.book_repository import IBookRepository
+from app.core.ttl_cache import TTLCache
 from app.injector import injector
 from app.models import Book
+
+
+reference_cache = TTLCache(ttl_seconds=120)
 
 class ValidationError(Exception):
     """Input failed a business rule (bad password length, duplicate
@@ -29,10 +33,10 @@ class BooksDomain:
         self.repo = repo
 
     def list_books(self) -> List[Book]:
-        return self.repo.list_all()
+        return reference_cache.get_or_set("books", self.repo.list_all)
 
     def get_book(self, book_id: int) -> Optional[Book]:
-        return self.repo.get(book_id)
+        return reference_cache.get_or_set(f"book:{book_id}", lambda: self.repo.get(book_id))
 
     def find_by_title(self, title: str) -> Optional[Book]:
         return self.repo.find_by_title(title)

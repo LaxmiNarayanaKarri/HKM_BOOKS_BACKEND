@@ -6,8 +6,12 @@ mirroring `app/domain/locations_domain.py`.
 from typing import List, Optional
 
 from app.contracts.language_repository import ILanguageRepository
+from app.core.ttl_cache import TTLCache
 from app.injector import injector
 from app.models import Language
+
+
+reference_cache = TTLCache(ttl_seconds=120)
 
 
 @injector
@@ -27,10 +31,12 @@ class LanguagesDomain:
     # ------------------------------------------------------------------
 
     def list_languages(self) -> List[Language]:
-        return self.repo.list_all()
+        return reference_cache.get_or_set("languages", self.repo.list_all)
 
     def get_language(self, language_id: int) -> Optional[Language]:
-        return self.repo.get(language_id)
+        return reference_cache.get_or_set(
+            f"language:{language_id}", lambda: self.repo.get(language_id)
+        )
 
     def find_by_name(self, name: str) -> Optional[Language]:
         return self.repo.find_by_name(name)
